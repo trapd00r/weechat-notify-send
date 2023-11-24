@@ -699,7 +699,7 @@ def escape_slashes(message):
 
 def send_notification(notification):
     """Sends the given notification to the user."""
-    notify_cmd = ['notify-send', '--app-name', 'weechat']
+    notify_cmd = ['ssh', 'x1', 'notify-send', '--app-name', 'weechat']
     if notification.icon:
         notify_cmd += ['--icon', notification.icon]
     if notification.desktop_entry:
