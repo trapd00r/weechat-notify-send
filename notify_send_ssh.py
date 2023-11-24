@@ -44,7 +44,7 @@ except ImportError:
 
 
 # Name of the script.
-SCRIPT_NAME = 'notify_send'
+SCRIPT_NAME = 'notify_send_ssh'
 
 # Author of the script.
 SCRIPT_AUTHOR = 's3rvac'
@@ -166,7 +166,7 @@ OPTIONS = {
         'Ellipsis to be used for notifications that are too long.'
     ),
     'icon': (
-        '/usr/share/icons/hicolor/32x32/apps/weechat.png',
+        '/usr/share/icons/Vibrancy-Colors/apps/256/web-slack.png',
         'Path to an icon to be shown in notifications.'
     ),
     'desktop_entry': (
@@ -256,7 +256,8 @@ def message_printed_callback(data, buffer, date, tags, is_displayed,
 
     if notification_should_be_sent(buffer, tags, nick, is_displayed, is_highlight, message):
         notification = prepare_notification(buffer, nick, message)
-        send_notification(notification)
+        send_notification(notification, 'x1')
+        send_notification(notification, 'fantomen')
 
     return weechat.WEECHAT_RC_OK
 
@@ -697,26 +698,28 @@ def escape_slashes(message):
     return message.replace('\\', r'\\')
 
 
-def send_notification(notification):
-    """Sends the given notification to the user."""
-    notify_cmd = ['ssh', 'x1', 'notify-send', '--app-name', 'weechat']
+def send_notification(notification, remote_host):
+    """Sends the given notification to the user on the specified remote host."""
+
+    # Construct the SSH command to run notify-send on the remote host.
+    ssh_cmd = ['ssh', remote_host, 'notify-send', '--app-name', 'weechat']
     if notification.icon:
-        notify_cmd += ['--icon', notification.icon]
+        ssh_cmd += ['--icon', notification.icon]
     if notification.desktop_entry:
-        notify_cmd += ['--hint', 'string:desktop-entry:{}'.format(notification.desktop_entry)]
+        ssh_cmd += ['--hint', 'string:desktop-entry:{}'.format(notification.desktop_entry)]
     if notification.timeout:
-        notify_cmd += ['--expire-time', str(notification.timeout)]
+        ssh_cmd += ['--expire-time', str(notification.timeout)]
     if notification.transient:
-        notify_cmd += ['--hint', 'int:transient:1']
+        ssh_cmd += ['--hint', 'int:transient:1']
     if notification.urgency:
-        notify_cmd += ['--urgency', notification.urgency]
+        ssh_cmd += ['--urgency', notification.urgency]
     # The "im.received" category means "A received instant message
     # notification".
-    notify_cmd += ['--category', 'im.received']
+    ssh_cmd += ['--category', 'im.received']
     # We need to add '--' before the source and message to ensure that
     # notify-send considers the remaining parameters as the source and the
     # message. This prevents errors when a source or message starts with '--'.
-    notify_cmd += [
+    ssh_cmd += [
         '--',
         # notify-send fails with "No summary specified." when no source is
         # specified, so ensure that there is always a non-empty source.
@@ -732,18 +735,17 @@ def send_notification(notification):
     with open(os.devnull, 'wb') as devnull:
         try:
             subprocess.check_call(
-                notify_cmd,
+                ssh_cmd,
                 stderr=subprocess.STDOUT,
                 stdout=devnull,
             )
         except Exception as ex:
             error_message = '{} (reason: {!r}). {}'.format(
-                'Failed to send the notification via notify-send',
+                'Failed to send the notification via notify-send over SSH',
                 '{}: {}'.format(ex.__class__.__name__, ex),
-                'Ensure that you have notify-send installed in your system.',
+                'Ensure that you have notify-send and SSH installed in your system, and the SSH key is set up for passwordless authentication to the remote host.',
             )
             print(error_message, file=sys.stderr)
-
 
 if __name__ == '__main__':
     # Registration.

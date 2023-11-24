@@ -1,3 +1,8 @@
+A fork that let's notify-send work over ssh hosts.
+I use it to send notifications to several computers at the same time for slack
+notifications.
+
+
 weechat-notify-send
 ===================
 
